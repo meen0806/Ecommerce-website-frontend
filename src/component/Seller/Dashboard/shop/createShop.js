@@ -1,28 +1,71 @@
-import React, { useState } from "react";
-import { Box, TextField, Button, Typography } from "@mui/material";
+import React, { useState, useEffect } from "react";
+import { Box, Typography } from "@mui/material";
 import CommonForm from "../../common/form";
+import axios from "axios";
 
 export const CreateShop = () => {
+  const getSellerId = () => {
+    const userData = JSON.parse(localStorage.getItem("user"));  
+    return userData?.account?.seller?.id || "";
+  };
+
   const [user, setUser] = useState({
+    sellerId: getSellerId(),
+    categoryId: "",
     shopName: "",
-    ownerID: "",
+    shopDescription: "",
+    location: "",
+    logo_url: "",
   });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted:", user);
-    alert(`Shop Created: ${JSON.stringify(user, null, 2)}`);
-
-    setUser({
-      shopName: "",
-      ownerID: "",
-    });
+  const [categories, setCategories] = useState([]);
+  const handleSubmit = async (formData) => {
+    try {
+      //HANDLING FORM DATA FOR UPLOADING IMAGES
+      const formdata = new FormData();
+      Object.keys(formData).forEach((key) => {
+        formdata.append(key, formData[key]);
+      });
+  
+      const response = await axios.post(
+        "http://localhost:3004/shop/create-shop",
+        formdata
+      );
+      
+      if (response.status === 200) {
+        alert("Shop created successfully");
+        setUser({
+          sellerId: getSellerId(),
+          categoryId: "",
+          shopName: "",
+          shopDescription: "",
+          location: "",
+          logo_url: "",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating shop", error);
+      alert("Error creating shop");
+    }
   };
+
+  useEffect(() => {
+   
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("http://localhost:3004/shop/get-category");
+        if (response.status === 200) {
+          setCategories(response.data.result.shops);
+        }
+      } catch (error) {
+        console.error("Error fetching categories", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   return (
     <Box
-      component="form"
-      onSubmit={handleSubmit}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -38,8 +81,10 @@ export const CreateShop = () => {
 
       <CommonForm
         entityType="shop"
-        formData={{ shopName: "", ownerID: "" }}
-        onSubmit={(data) => console.log("Product Created", data)}
+        formData={user}
+        categories={categories}
+        onChange={setUser}
+        onSubmit={handleSubmit}
       />
     </Box>
   );
