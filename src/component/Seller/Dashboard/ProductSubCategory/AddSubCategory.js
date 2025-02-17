@@ -1,26 +1,59 @@
-import React, { useEffect, useState } from "react";
-import CommonForm from "../../common/form";
+import React, { useState, useEffect } from "react";
 import { Box, Typography } from "@mui/material";
+import axios from "axios";
+import CommonForm from "../../common/form"; // Import the CommonForm
+
 export const AddSubCategory = () => {
-  const [subcategoryFormData, setSubcategoryFormData] = useState({});
+  const [user, setUser] = useState({
+    categoryId: "",
+    subCategoryName: "",
+  });
+
   const [categories, setCategories] = useState([]);
 
+  // Fetch categories from API
   useEffect(() => {
-    setCategories([
-      { id: 1, name: "Electronics" },
-      { id: 2, name: "Fashion" },
-    ]);
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("http://localhost:3004/shop/get-category");
+        if (response.status === 200) {
+          setCategories(response.data.result.shops); 
+        }
+      } catch (error) {
+        console.error("Error fetching categories", error);
+      }
+    };
+    fetchCategories();
   }, []);
 
- 
-  const handleSubcategorySubmit = (formData) => {
-    console.log("Subcategory Form Submitted:", formData);
-   
+  // Handle form submission
+  const handleSubmit = async (formData) => {
+    console.log("Submitting Data:", formData); // Debugging log
+    try {
+      const response = await axios.post(
+        "http://localhost:3004/shop/create-subCategory",
+        {
+          categoryId: formData.categoryId,
+          subCategoryName: formData.subCategoryName,
+        }
+      );
+
+      console.log("Response Data:", response.data); // Debugging log
+
+      if (response.status === 200) {
+        setUser({
+          categoryId: "",
+          subCategoryName: "",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating subCategory:", error.response?.data || error);
+      alert(`Error: ${error.response?.data?.message || "Something went wrong"}`);
+    }
   };
 
   return (
     <Box
-      component="form"
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -31,14 +64,14 @@ export const AddSubCategory = () => {
       }}
     >
       <Typography variant="h5" align="center" gutterBottom>
-      Add Subcategory
+        Create SubCategory
       </Typography>
 
       <CommonForm
         entityType="subcategory"
-        formData={subcategoryFormData}
-        onSubmit={handleSubcategorySubmit}
+        formData={user}
         categories={categories}
+        onSubmit={handleSubmit}
       />
     </Box>
   );
